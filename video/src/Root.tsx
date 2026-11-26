@@ -79,174 +79,173 @@ const Stage: React.FC<{dur: number; footer?: boolean; first?: boolean; children:
       <div style={{position: 'absolute', left: 480, top: 296, width: 120, height: 5, background: AMBER}} />
       {children}
       {footer && <Text y={1490} size={28} color={DIM} font={SB} a={prog(t, 0.5, 1.0)}>
-        Datos: GP de Ciudad de México 2026 · F1
+        Datos: Britannica · Mazda · Le Mans 1991
       </Text>}
     </AbsoluteFill>
   );
 };
 
-// ---------- Escena 1 ----------
+// ---------- Rotor (sprite animado): rotor triangular + cámara epitrocoide ----------
+const Rotor: React.FC<{x: number; y: number; t: number; s?: number; rps?: number}> = ({x, y, t, s = 1, rps = 0.7}) => {
+  const R = 330, e = 55;
+  const phi = t * rps * Math.PI * 2; // giro del eje de salida
+  const hp: string[] = [];
+  for (let k = 0; k <= 360; k++) {
+    const p = (k / 360) * 6 * Math.PI;
+    hp.push(`${k === 0 ? 'M' : 'L'}${(e * Math.cos(p) + R * Math.cos(p / 3)).toFixed(1)},${(e * Math.sin(p) + R * Math.sin(p / 3)).toFixed(1)}`);
+  }
+  const cx = e * Math.cos(phi), cy = e * Math.sin(phi);
+  const ap = [0, 1, 2].map((k) => {
+    const a = phi / 3 + (k * 2 * Math.PI) / 3;
+    return [cx + R * Math.cos(a), cy + R * Math.sin(a), a] as [number, number, number];
+  });
+  let d = '';
+  let best = 0, bestScore = -9;
+  for (let k = 0; k < 3; k++) {
+    const [x0, y0] = ap[k];
+    const [x1, y1, a1] = ap[(k + 1) % 3];
+    const am = ap[k][2] + Math.PI / 3;
+    const qx = cx + 0.62 * R * Math.cos(am), qy = cy + 0.62 * R * Math.sin(am);
+    d += `${k === 0 ? 'M' : 'L'}${x0.toFixed(1)},${y0.toFixed(1)} Q${qx.toFixed(1)},${qy.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)} `;
+    const score = -Math.sin(am); // cara que mira hacia arriba (bujías)
+    if (score > bestScore) { bestScore = score; best = k; }
+  }
+  const am = ap[best][2] + Math.PI / 3;
+  const gx = cx + 0.74 * R * Math.cos(am), gy = cy + 0.74 * R * Math.sin(am);
+  const pulse = 0.45 + 0.35 * Math.sin(t * 9);
+  return (
+    <g transform={`translate(${x},${y}) scale(${s})`}>
+      <path d={hp.join(' ')} fill="none" stroke={BAR} strokeWidth={9} strokeLinejoin="round" />
+      <path d={d + 'Z'} fill={PANEL} stroke={AMBER} strokeWidth={8} strokeLinejoin="round" />
+      <circle cx={gx} cy={gy} r={52} fill={AMBER} opacity={pulse * (0.4 + 0.6 * clamp01(bestScore, 0.2, 0.9))} />
+      <line x1={0} y1={0} x2={cx} y2={cy} stroke={AMBER} strokeWidth={9} strokeLinecap="round" />
+      <circle cx={0} cy={0} r={20} fill={GRAY} />
+      <circle cx={cx} cy={cy} r={22} fill={AMBER} />
+      <circle cx={cx} cy={cy} r={8} fill={BG} />
+    </g>
+  );
+};
+
+const Dial: React.FC<{x: number; y: number; r: number; ang: number; col: string}> = ({x, y, r, ang, col}) => (
+  <g transform={`translate(${x},${y})`}>
+    <circle r={r} fill={PANEL} stroke={BAR} strokeWidth={8} />
+    <line x1={0} y1={0} x2={(r - 18) * Math.sin((ang * Math.PI) / 180)} y2={-(r - 18) * Math.cos((ang * Math.PI) / 180)} stroke={col} strokeWidth={12} strokeLinecap="round" />
+    <circle r={14} fill={col} />
+    <circle r={6} cy={-r + 14} fill={GRAY} />
+  </g>
+);
+
+// ---------- Escena 1: gancho ----------
 const S1: React.FC<{dur: number}> = ({dur}) => {
   const f0 = useCurrentFrame();
   const t0 = useT();
   const t = f0 === 0 ? 9 : t0; // cuadro 0 = portada (estado final); IG lo usa como cover
-  
-  const n = Math.round(20 * prog(t, 0.3, 1.4));
+  const n = Math.round(9 * (1 - prog(t, 0.3, 1.4)));
   const pop = 1 + 0.05 * Math.sin(interpolate(t, [1.4, 1.8], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) * Math.PI);
   return (
     <Stage dur={dur} footer={false} first>
-      <Text y={520} dy={(1 - prog(t, 0.1, 0.5)) * 40} size={50} color={GRAY} font={XB} spacing={10} a={prog(t, 0.1, 0.5)}>KIMI ANTONELLI</Text>
-      <Text y={640} dy={(1 - prog(t, 0.25, 0.65)) * 40} size={120} spacing={8} a={prog(t, 0.25, 0.65)}>A LOS</Text>
-      <Text y={950} size={500 * pop} color={AMBER}>{n}</Text>
-      <Text y={1300} dy={(1 - prog(t, 1.2, 1.7)) * 40} size={150} spacing={12} a={prog(t, 1.2, 1.7)}>AÑOS</Text>
-      <Text y={1420} dy={(1 - prog(t, 1.7, 2.2)) * 40} size={56} color={AMBER} font={XB} spacing={4} a={prog(t, 1.7, 2.2)}>Y 68 DÍAS · CAMPEÓN DE F1</Text>
-      <Overlay a={clamp01(t, 0.3, 0.6)}><SideCar x={-260 + 1700 * easeOut(t, 0.4, 3.0)} y={1680} s={0.8} t={t} /></Overlay>
+      <Text y={520} dy={(1 - prog(t, 0.1, 0.5)) * 40} size={50} color={GRAY} font={XB} spacing={10} a={prog(t, 0.1, 0.5)}>ASÍ FUNCIONA EL</Text>
+      <Text y={645} dy={(1 - prog(t, 0.25, 0.65)) * 40} size={128} spacing={6} a={prog(t, 0.25, 0.65)}>MOTOR ROTATIVO</Text>
+      <Text y={1010} size={520 * pop} color={AMBER}>{n}</Text>
+      <Text y={1340} dy={(1 - prog(t, 1.2, 1.7)) * 40} size={150} spacing={12} a={prog(t, 1.2, 1.7)}>PISTONES</Text>
+      <Text y={1440} dy={(1 - prog(t, 1.7, 2.2)) * 40} size={52} color={AMBER} font={XB} spacing={4} a={prog(t, 1.7, 2.2)}>NI BIELAS NI VÁLVULAS</Text>
     </Stage>
   );
 };
 
-// ---------- Escena 2: tabla del campeonato ----------
-const DRIVERS: [string, number][] = [
-  ['ANTONELLI', 380], ['VERSTAPPEN', 261], ['HAMILTON', 259], ['RUSSELL', 250],
-  ['LECLERC', 245], ['NORRIS', 221], ['PIASTRI', 150],
-];
+// ---------- Escena 2: el rotor ----------
+const CHIPS = ['ADMISIÓN', 'COMPRESIÓN', 'EXPLOSIÓN', 'ESCAPE'];
 const S2: React.FC<{dur: number}> = ({dur}) => {
   const t = useT();
-  return (
-    <Stage dur={dur} footer={false}>
-      <Text y={455} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={84} spacing={4} a={prog(t, 0.05, 0.45)}>ASÍ QUEDÓ EL MUNDIAL</Text>
-      <Text y={535} size={34} color={GRAY} font={XB} spacing={7} a={prog(t, 0.2, 0.6)}>TRAS EL GP DE MÉXICO · PUNTOS</Text>
-      {DRIVERS.map(([name, pts], i) => {
-        const s0 = 0.5 + i * 0.22;
-        const a = prog(t, s0, s0 + 0.3);
-        const g = prog(t, s0 + 0.05, s0 + 1.1);
-        const y = 665 + i * 118;
-        const champ = i === 0;
-        const w = 520 * (pts / 380) * g;
-        return (
-          <React.Fragment key={name}>
-            <Text x={90} y={y} size={36} font={XB} spacing={3} align="left" w={300} color={champ ? WHITE : GRAY} a={a}>{name}</Text>
-            <div style={{position: 'absolute', left: 390, top: y - 28, width: 520, height: 56, borderRadius: 14, background: PANEL, opacity: a}} />
-            <div style={{position: 'absolute', left: 390, top: y - 28, width: Math.max(0, w), height: 56, borderRadius: 14, background: champ ? AMBER : BAR}} />
-            <Text x={390 + w + 14} y={y} size={52} align="left" w={160} color={champ ? AMBER : WHITE} a={a}>{Math.round(pts * g)}</Text>
-          </React.Fragment>
-        );
-      })}
-      <Text y={1530} dy={(1 - prog(t, 2.6, 3.1)) * 30} size={44} color={AMBER} font={XB} spacing={3} a={prog(t, 2.6, 3.1)}>+119 PUNTOS SOBRE VERSTAPPEN</Text>
-      <Overlay a={clamp01(t, 3.0, 3.4)}><Flag x={440} y={1600} t={t} s={0.85} /></Overlay>
-    </Stage>
-  );
-};
-
-// ---------- Escena 3: 365 + 15 = 380 ----------
-const S3: React.FC<{dur: number}> = ({dur}) => {
-  const t = useT();
-  const n1 = Math.round(365 * prog(t, 0.3, 1.3));
-  const lineW = 700 * prog(t, 2.3, 2.8);
-  const n3 = Math.round(365 + 15 * prog(t, 2.9, 3.4));
-  return (
-    <Stage dur={dur} footer={false}>
-      <Text y={480} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={46} color={GRAY} font={XB} spacing={6} a={prog(t, 0.05, 0.45)}>LLEGÓ A MÉXICO CON</Text>
-      <Text y={690} size={280} color={WHITE} a={prog(t, 0.2, 0.5)}>{n1}</Text>
-      <Text y={985} dy={(1 - prog(t, 1.6, 2.1)) * 40} size={280} color={AMBER} a={prog(t, 1.6, 2.1)}>+15</Text>
-      <Text y={1150} dy={(1 - prog(t, 1.9, 2.3)) * 20} size={40} color={GRAY} font={XB} spacing={5} a={prog(t, 1.9, 2.3)}>POR TERMINAR 3.º</Text>
-      <div style={{position: 'absolute', left: 540 - lineW / 2, top: 1210, width: lineW, height: 8, background: AMBER, borderRadius: 4}} />
-      <Text y={1370} size={280} color={AMBER} a={prog(t, 2.7, 3.0)}>{n3}</Text>
-      <Text y={1530} size={28} color={DIM} font={SB} a={prog(t, 3.0, 3.5)}>Datos: GP de Ciudad de México 2026 · F1</Text>
-      <Overlay a={clamp01(t, 1.2, 1.5)}>
-        <SideCar x={620 + 70 * clamp01(t, 1.5, 6)} y={1625} s={0.55} t={t} body={BAR} accent={GRAY} />
-        <SideCar x={-260 + 1100 * easeOut(t, 1.8, 4.6)} y={1745} s={0.55} t={t} body={AMBER} accent={WHITE} />
-      </Overlay>
-    </Stage>
-  );
-};
-
-// ---------- Escena 4: el más joven ----------
-const S4: React.FC<{dur: number}> = ({dur}) => {
-  const t = useT();
-  const bars: [string, number, string, string, number, number][] = [
-    ['ANTONELLI · 2026', 20, AMBER, '#0B0D10', 920, 0.6],
-    ['VETTEL · 2010', 23, BAR, WHITE, 1200, 1.3],
-  ];
+  const act = Math.floor(t / 0.9) % 4;
   return (
     <Stage dur={dur}>
-      <Text y={470} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={100} spacing={4} a={prog(t, 0.05, 0.45)}>EL CAMPEÓN MÁS JOVEN</Text>
-      <Text y={585} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={100} color={AMBER} spacing={4} a={prog(t, 0.05, 0.45)}>DE LA HISTORIA</Text>
-      {bars.map(([label, age, col, tcol, y, s0]) => {
-        const a = prog(t, s0, s0 + 0.35);
-        const g = prog(t, s0 + 0.1, s0 + 1.2);
-        const w = 900 * age / 25 * g;
-        return (
-          <React.Fragment key={label}>
-            <Text x={90} y={y - 95} size={44} font={XB} spacing={4} align="left" color={col === AMBER ? WHITE : GRAY} a={a}>{label}</Text>
-            <div style={{position: 'absolute', left: 90, top: y - 55, width: Math.max(0, w), height: 130, borderRadius: 14, background: col}} />
-            {w > 260 && <Text x={90 + w - 40} y={y + 10} size={100} align="right" w={400} color={tcol}>{Math.round(age * g)} años</Text>}
-          </React.Fragment>
-        );
-      })}
-      <Text y={1405} dy={(1 - prog(t, 2.8, 3.3)) * 30} size={44} color={AMBER} font={XB} a={prog(t, 2.8, 3.3)}>Récord anterior: Vettel, 23 años</Text>
-      <Overlay a={clamp01(t, 3.1, 3.6)}><Helmet x={540} y={1650} t={t} s={1.1} /></Overlay>
+      <Text y={455} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={84} spacing={4} a={prog(t, 0.05, 0.45)}>UN ROTOR TRIANGULAR</Text>
+      <Text y={535} size={34} color={GRAY} font={XB} spacing={7} a={prog(t, 0.2, 0.6)}>3 CÁMARAS · 4 TIEMPOS</Text>
+      <Overlay a={prog(t, 0.3, 0.9)}><Rotor x={540} y={930} t={t} s={1.0} /></Overlay>
+      {CHIPS.map((c, i) => (
+        <React.Fragment key={c}>
+          <div style={{position: 'absolute', left: 60 + i * 242, top: 1330, width: 226, height: 74, borderRadius: 37, background: i === act ? AMBER : PANEL, opacity: prog(t, 0.8 + i * 0.12, 1.2 + i * 0.12)}} />
+          <Text x={60 + i * 242 + 113} y={1368} size={25} font={XB} spacing={1} w={226} color={i === act ? BG : GRAY} a={prog(t, 0.8 + i * 0.12, 1.2 + i * 0.12)}>{c}</Text>
+        </React.Fragment>
+      ))}
     </Stage>
   );
 };
 
-// ---------- Escena 5: 73 años ----------
+// ---------- Escena 3: 1 vuelta del rotor = 3 del eje ----------
+const S3: React.FC<{dur: number}> = ({dur}) => {
+  const t = useT();
+  const g = prog(t, 0.5, 3.6);
+  const eje = 3 * g;
+  return (
+    <Stage dur={dur}>
+      <Text y={470} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={46} color={GRAY} font={XB} spacing={6} a={prog(t, 0.05, 0.45)}>RELACIÓN ROTOR : EJE</Text>
+      <Text y={650} size={250} color={AMBER} a={prog(t, 0.2, 0.6)}>1 : 3</Text>
+      <Overlay a={prog(t, 0.3, 0.7)}>
+        <Dial x={300} y={1010} r={150} ang={360 * g} col={WHITE} />
+        <Dial x={780} y={1010} r={150} ang={360 * eje} col={AMBER} />
+      </Overlay>
+      <Text x={300} y={1230} size={34} font={XB} spacing={4} color={GRAY} w={400} a={prog(t, 0.5, 0.9)}>ROTOR</Text>
+      <Text x={300} y={1290} size={70} w={400} a={prog(t, 0.5, 0.9)}>{g.toFixed(1)} vueltas</Text>
+      <Text x={780} y={1230} size={34} font={XB} spacing={4} color={GRAY} w={400} a={prog(t, 0.5, 0.9)}>EJE DE SALIDA</Text>
+      <Text x={780} y={1290} size={70} color={AMBER} w={400} a={prog(t, 0.5, 0.9)}>{eje.toFixed(1)} vueltas</Text>
+      <Text y={1400} dy={(1 - prog(t, 3.2, 3.7)) * 30} size={46} color={AMBER} font={XB} spacing={2} a={prog(t, 3.2, 3.7)}>UNA EXPLOSIÓN POR VUELTA DEL EJE</Text>
+    </Stage>
+  );
+};
+
+// ---------- Escena 4: Le Mans 1991 ----------
+const S4: React.FC<{dur: number}> = ({dur}) => {
+  const t = useT();
+  const stats: [string, string][] = [['4', 'ROTORES'], ['700', 'PS'], ['362', 'VUELTAS']];
+  return (
+    <Stage dur={dur}>
+      <Text y={470} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={50} color={GRAY} font={XB} spacing={8} a={prog(t, 0.05, 0.45)}>24 HORAS DE LE MANS</Text>
+      <Text y={680} size={330} color={AMBER} a={prog(t, 0.2, 0.6)}>1991</Text>
+      <Text y={870} size={100} spacing={4} a={prog(t, 0.6, 1.0)}>MAZDA 787B</Text>
+      {stats.map(([v, l], i) => {
+        const a = prog(t, 1.0 + i * 0.3, 1.4 + i * 0.3);
+        const cx = 210 + i * 330;
+        return (
+          <React.Fragment key={l}>
+            <div style={{position: 'absolute', left: cx - 140, top: 990, width: 280, height: 250, borderRadius: 20, background: PANEL, borderTop: `6px solid ${AMBER}`, opacity: a}} />
+            <Text x={cx} y={1100} size={130} color={AMBER} w={280} a={a}>{v}</Text>
+            <Text x={cx} y={1195} size={32} font={XB} spacing={3} color={GRAY} w={280} a={a}>{l}</Text>
+          </React.Fragment>
+        );
+      })}
+      <Overlay a={clamp01(t, 0.4, 0.7)}><SideCar x={-260 + 1700 * easeOut(t, 0.5, 4.2)} y={1700} s={0.8} t={t} body={AMBER} accent={WHITE} /></Overlay>
+    </Stage>
+  );
+};
+
+// ---------- Escena 5: único rotativo ----------
 const S5: React.FC<{dur: number}> = ({dur}) => {
   const t = useT();
-  const n = Math.round(73 * prog(t, 0.3, 1.9));
-  const p = prog(t, 2.2, 3.6);
-  const x0 = 170, x1 = 910, y = 1345;
-  const a2 = prog(t, 3.55, 3.95);
   return (
-    <Stage dur={dur} footer={false}>
-      <Text y={470} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={76} spacing={4} a={prog(t, 0.05, 0.45)}>PRIMER CAMPEÓN ITALIANO EN</Text>
-      <Text y={850} size={560} color={AMBER}>{n}</Text>
-      <Text y={1190} dy={(1 - prog(t, 1.5, 2.0)) * 40} size={170} spacing={14} a={prog(t, 1.5, 2.0)}>AÑOS</Text>
-      <div style={{position: 'absolute', left: x0 - 16, top: y - 16, width: 32, height: 32, borderRadius: 16, background: GRAY, opacity: prog(t, 2.0, 2.4)}} />
-      <Text x={x0} y={y + 55} size={54} a={prog(t, 2.0, 2.4)}>1953</Text>
-      <Text x={x0} y={y + 108} size={32} color={GRAY} font={XB} spacing={5} a={prog(t, 2.0, 2.4)}>ASCARI</Text>
-      <div style={{position: 'absolute', left: x0, top: y - 4, width: (x1 - x0) * p, height: 8, background: AMBER, borderRadius: 4}} />
-      <div style={{position: 'absolute', left: x1 - 16, top: y - 16, width: 32, height: 32, borderRadius: 16, background: AMBER, opacity: a2}} />
-      <Text x={x1} y={y + 55} size={54} color={AMBER} a={a2}>2026</Text>
-      <Text x={x1} y={y + 108} size={32} font={XB} spacing={5} a={a2}>ANTONELLI</Text>
-      <Overlay a={clamp01(t, 2.0, 2.4)}><SideCar x={x0 + (x1 - x0) * p} y={y - 14} s={0.5} t={t} body={AMBER} accent={WHITE} lines={p < 0.99} /></Overlay>
+    <Stage dur={dur}>
+      <Text y={470} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={92} spacing={4} a={prog(t, 0.05, 0.45)}>PRIMER JAPONÉS</Text>
+      <Text y={575} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={92} spacing={4} a={prog(t, 0.05, 0.45)}>EN GANAR LE MANS</Text>
+      <Text y={850} dy={(1 - prog(t, 1.2, 1.7)) * 40} size={150} color={AMBER} spacing={4} a={prog(t, 1.2, 1.7)}>EL ÚNICO</Text>
+      <Text y={990} dy={(1 - prog(t, 1.4, 1.9)) * 40} size={150} color={AMBER} spacing={4} a={prog(t, 1.4, 1.9)}>ROTATIVO</Text>
+      <Text y={1180} size={44} color={GRAY} font={XB} spacing={2} a={prog(t, 3.0, 3.6)}>Al año siguiente, las reglas</Text>
+      <Text y={1245} size={44} color={GRAY} font={XB} spacing={2} a={prog(t, 3.0, 3.6)}>solo admitieron pistones</Text>
+      <Overlay a={clamp01(t, 0.8, 1.2)}><Trophy x={540} y={1700} t={t} s={1.0} /></Overlay>
     </Stage>
   );
 };
 
-// ---------- Escena 6: constructores + cierre ----------
-const TEAMS: [string, number, string][] = [
-  ['MERCEDES', 630, 'mercedes'], ['FERRARI', 504, 'ferrari'], ['RED BULL', 380, 'redbull'], ['MCLAREN', 371, 'mclaren'],
-];
-const S6: React.FC<{dur: number; logos: Record<string, string>}> = ({dur, logos}) => {
+// ---------- Escena 6: cierre ----------
+const S6: React.FC<{dur: number}> = ({dur}) => {
   const t = useT();
   return (
-    <Stage dur={dur} footer={false}>
-      <Text y={455} dy={(1 - prog(t, 0.05, 0.45)) * 30} size={84} spacing={4} a={prog(t, 0.05, 0.45)}>CONSTRUCTORES</Text>
-      <Text y={535} size={34} color={GRAY} font={XB} spacing={7} a={prog(t, 0.2, 0.6)}>TRAS EL GP DE MÉXICO · PUNTOS</Text>
-      {TEAMS.map(([name, pts, key], i) => {
-        const s0 = 0.5 + i * 0.3;
-        const a = prog(t, s0, s0 + 0.3);
-        const g = prog(t, s0 + 0.05, s0 + 1.1);
-        const y = 700 + i * 150;
-        const champ = i === 0;
-        const w = 520 * (pts / 630) * g;
-        const logo = logos[key];
-        const nameX = logo ? 200 : 90;
-        return (
-          <React.Fragment key={name}>
-            {logo && <img src={staticFile(logo)} style={{position: 'absolute', left: 90, top: y - 48, width: 96, height: 96, objectFit: 'contain', opacity: a}} />}
-            <Text x={nameX} y={y - 52} size={34} font={XB} spacing={3} align="left" w={500} color={champ ? WHITE : GRAY} a={a}>{name}</Text>
-            <div style={{position: 'absolute', left: nameX, top: y - 12, width: 520, height: 44, borderRadius: 12, background: PANEL, opacity: a}} />
-            <div style={{position: 'absolute', left: nameX, top: y - 12, width: Math.max(0, w), height: 44, borderRadius: 12, background: champ ? AMBER : BAR}} />
-            <Text x={nameX + w + 14} y={y + 10} size={52} align="left" w={200} color={champ ? AMBER : WHITE} a={a}>{Math.round(pts * g)}</Text>
-          </React.Fragment>
-        );
-      })}
-      <div style={{position: 'absolute', left: 140, top: 1355, width: 800, height: 105, borderRadius: 52, background: AMBER, opacity: prog(t, 2.4, 2.9)}} />
-      <Text y={1408} size={35} color={BG} font={XB} spacing={2} a={prog(t, 2.4, 2.9)}>SÍGUENOS EN MOTOR SPECS</Text>
-      <Text y={1490} size={28} color={DIM} font={SB} a={prog(t, 0.5, 1.0)}>Datos: GP de Ciudad de México 2026 · F1</Text>
-      <Overlay a={clamp01(t, 3.0, 3.4)}><Trophy x={540} y={1700} t={t} s={1.0} /></Overlay>
+    <Stage dur={dur}>
+      <Text y={600} dy={(1 - prog(t, 0.05, 0.5)) * 30} size={110} spacing={4} a={prog(t, 0.05, 0.5)}>SIN PISTONES,</Text>
+      <Text y={730} dy={(1 - prog(t, 0.2, 0.65)) * 30} size={110} color={AMBER} spacing={4} a={prog(t, 0.2, 0.65)}>CON HISTORIA</Text>
+      <Overlay a={prog(t, 0.3, 0.9)}><Rotor x={540} y={1070} t={t} s={0.45} /></Overlay>
+      <div style={{position: 'absolute', left: 140, top: 1300, width: 800, height: 105, borderRadius: 52, background: AMBER, opacity: prog(t, 0.6, 1.1)}} />
+      <Text y={1353} size={35} color={BG} font={XB} spacing={2} a={prog(t, 0.6, 1.1)}>SÍGUENOS EN MOTOR SPECS</Text>
     </Stage>
   );
 };
