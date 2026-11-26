@@ -5,6 +5,8 @@ import {
 } from 'remotion';
 import props from '../public/props.json';
 import {Carrusel} from './Carousel';
+import {BoomVideo, boomTotal} from './BoomVideo';
+import {V8Video, v8Total} from './V8Video';
 import {Overlay, SideCar, Flag, Helmet, Trophy, clamp01, easeOut} from './Sprites';
 
 const BG = '#0B0D10';
@@ -273,5 +275,7 @@ export const Root: React.FC = () => (
     defaultProps={{i: 0, slides: [] as any[]}} />
   <Composition id="V2" component={V2 as any} durationInFrames={total} fps={30} width={1080} height={1920}
     defaultProps={{logos: {} as Record<string, string>}} />
+  <Composition id="Boom" component={BoomVideo as any} durationInFrames={boomTotal} fps={30} width={1080} height={1920} />
+  <Composition id="V8Video" component={V8Video as any} durationInFrames={v8Total} fps={30} width={1080} height={1920} />
   </>
 );
