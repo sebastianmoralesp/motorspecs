@@ -7,6 +7,7 @@ import props from '../public/props.json';
 import {Carrusel} from './Carousel';
 import {BoomVideo, boomTotal} from './BoomVideo';
 import {V8Video, v8Total} from './V8Video';
+import {XiaomiVideo, xiaomiTotal, FordVideo, fordTotal, StellantisVideo, stellantisTotal, AeroVideo, aeroTotal} from './NewsVideos';
 import {Overlay, SideCar, Flag, Helmet, Trophy, clamp01, easeOut} from './Sprites';
 
 const BG = '#0B0D10';
@@ -277,5 +278,9 @@ export const Root: React.FC = () => (
     defaultProps={{logos: {} as Record<string, string>}} />
   <Composition id="Boom" component={BoomVideo as any} durationInFrames={boomTotal} fps={30} width={1080} height={1920} />
   <Composition id="V8Video" component={V8Video as any} durationInFrames={v8Total} fps={30} width={1080} height={1920} />
+  <Composition id="Xiaomi" component={XiaomiVideo as any} durationInFrames={xiaomiTotal} fps={30} width={1080} height={1920} />
+  <Composition id="Ford" component={FordVideo as any} durationInFrames={fordTotal} fps={30} width={1080} height={1920} />
+  <Composition id="Stellantis" component={StellantisVideo as any} durationInFrames={stellantisTotal} fps={30} width={1080} height={1920} />
+  <Composition id="Aero" component={AeroVideo as any} durationInFrames={aeroTotal} fps={30} width={1080} height={1920} />
   </>
 );
