@@ -18,3 +18,7 @@ Formato de cada línea:
 - 2026-11-26 · Aviación · video · Boom Supersonic enciende el núcleo Sprint Core · https://www.instagram.com/reel/DgOILVSTKQS/
 - 2026-11-26 · Motorsport · carrusel · NASCAR sube a 750 hp en 2027 · https://www.instagram.com/p/DgOV6samNqK/
 - 2026-11-26 · Mecánica · video · V8 cross-plane vs flat-plane · https://www.instagram.com/reel/DgOjpYVo8tb/
+- 2026-11-27 · Motorsport/EV · video · Xiaomi SU7 Ultra vs Porsche, récord eléctrico en Nürburgring · https://www.instagram.com/reel/DgQfQg4qOkW/
+- 2026-11-27 · Motorsport · video · Ford GT41, regreso a Le Mans 2027 · https://www.instagram.com/reel/DgQs-GDhSjo/
+- 2026-11-27 · Motorsport · video · Stellantis apaga su motorsport de fábrica (Peugeot sale del WEC) · https://www.instagram.com/reel/DgQ6tGFudnU/
+- 2026-11-27 · F1/Mecánica · video · Aerodinámica F1: el doble de velocidad, cuatro veces la carga · https://www.instagram.com/reel/DgRIb_CNP-x/
